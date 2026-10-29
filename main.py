@@ -70,6 +70,19 @@ def mas_vendido(resumen):
         return "Aún no tienes productos vendidos."
     return f"{mayor_producto}: {mayor_unidades} unidades"
 
+def mayor_ingreso(resumen):
+    mayor_producto = None
+    mayor_importe = 0
+    for producto in resumen:
+        ingreso = resumen[producto]["importe"]
+        if mayor_producto is None or ingreso > mayor_importe:
+            mayor_producto = producto
+            mayor_importe = ingreso
+    if mayor_producto is None:
+        return "Aún no tienes productos vendidos."
+    return f"{mayor_producto}: ${mayor_importe}"
+
+
 ruta_entrada = input("Nombre del archivo de ventas: ").strip()
 try:
     ventas = leer_ventas(ruta_entrada)
@@ -83,4 +96,4 @@ if ruta_salida == ruta_entrada:
 else:
     exportar_resumen(resumen, ruta_salida)
     
-print(mas_vendido(resumen))
+print(mayor_ingreso(resumen))
