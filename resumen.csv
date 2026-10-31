@@ -1,7 +1,7 @@
-producto,unidades,importe
-Carpeta,3,6600.0
-Cuaderno,6,9000.0
-Lapicera,7,3500.0
-Regla,2,1300.0
-Resaltador,4,3402.0
-TOTAL,22,23802.0
+producto,unidades,importe,porcentaje
+Carpeta,3,6600.00,27.73
+Cuaderno,6,9000.00,37.81
+Lapicera,7,3500.00,14.70
+Regla,2,1300.00,5.46
+Resaltador,4,3402.00,14.29
+TOTAL,22,23802.00,100.00
