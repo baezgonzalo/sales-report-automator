@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Cargá un CSV de ventas y obtené un resumen por producto en segundos.">
+    <title>Informe de ventas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="{{ url_for('inicio') }}" aria-label="Informe de ventas, inicio">
+          <span class="brand-mark" aria-hidden="true">↗</span>
+          <span>Informe<span class="brand-muted">/</span>ventas</span>
+        </a>
+        <span class="topbar-note">Análisis desde tu CSV</span>
+      </header>
+
+      <main>
+        <section class="hero" aria-labelledby="titulo">
+          <div class="hero-copy">
+            <p class="eyebrow"><span class="eyebrow-dot"></span> REPORTE DE VENTAS</p>
+            <h1 id="titulo">Tus ventas,<br><em>en claro.</em></h1>
+            <p class="hero-description">Cargá un archivo CSV y descubrí cuánto vendiste, qué productos se destacan y cómo se distribuyen tus ingresos.</p>
+            <div class="hero-points" aria-label="Características">
+              <span>Sin cargar datos a mano</span>
+              <span>Resumen al instante</span>
+              <span>Reporte descargable</span>
+            </div>
+          </div>
+
+          <form class="upload-card" method="post" enctype="multipart/form-data">
+            <div class="card-topline"><span>01 / CARGAR ARCHIVO</span><span class="card-icon" aria-hidden="true">↥</span></div>
+            <h2>Empezá con tu CSV</h2>
+            <p>Seleccioná el archivo de ventas de tu computadora.</p>
+            <label class="file-label" for="archivo">Archivo de ventas</label>
+            <input id="archivo" name="archivo" type="file" accept=".csv,text/csv" required>
+            <p class="file-help">Columnas necesarias: <code>producto</code>, <code>cantidad</code>, <code>precio</code>. Hasta 1 MB.</p>
+            {% if error %}<p class="error-message" role="alert">{{ error }}</p>{% endif %}
+            <button class="primary-button" type="submit">Generar resumen <span aria-hidden="true">→</span></button>
+            <a class="example-link" href="{{ url_for('ejemplo') }}">Ver datos de ejemplo <span aria-hidden="true">↗</span></a>
+          </form>
+        </section>
+
+        {% if resultado %}
+        <section class="results" aria-labelledby="resultados-titulo">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">02 / RESULTADOS</p>
+              <h2 id="resultados-titulo">Resumen generado</h2>
+              <p class="source-name">Archivo: {{ resultado.nombre_archivo }}</p>
+            </div>
+            <a class="download-button" href="{{ resultado.descarga_url }}" download="reporte_ventas.csv">Descargar CSV <span aria-hidden="true">↓</span></a>
+          </div>
+
+          <div class="stat-grid">
+            <article class="stat-card stat-featured">
+              <span class="stat-label">Importe total</span>
+              <strong>${{ resultado.total_importe }}</strong>
+              <span class="stat-note">Ingresos de todos los productos</span>
+            </article>
+            <article class="stat-card">
+              <span class="stat-label">Unidades vendidas</span>
+              <strong>{{ resultado.total_unidades }}</strong>
+              <span class="stat-note">En {{ resultado.productos }} productos</span>
+            </article>
+            <article class="stat-card">
+              <span class="stat-label">Ingreso por unidad</span>
+              <strong>${{ resultado.promedio }}</strong>
+              <span class="stat-note">Promedio de todas las unidades</span>
+            </article>
+          </div>
+
+          <div class="detail-grid">
+            <section class="panel table-panel" aria-labelledby="tabla-titulo">
+              <div class="panel-heading"><div><p class="eyebrow">DETALLE</p><h3 id="tabla-titulo">Por producto</h3></div><span class="panel-count">{{ resultado.productos }} productos</span></div>
+              {% if resultado.filas %}
+              <div class="table-scroll">
+                <table>
+                  <thead><tr><th scope="col">Producto</th><th scope="col">Unidades</th><th scope="col">Importe</th><th scope="col">Participación</th></tr></thead>
+                  <tbody>
+                    {% for fila in resultado.filas %}
+                    <tr>
+                      <th scope="row">{{ fila.producto }}</th>
+                      <td>{{ fila.unidades }}</td>
+                      <td class="money">${{ fila.importe }}</td>
+                      <td><div class="share"><span>{{ fila.porcentaje }}%</span><span class="share-track" aria-hidden="true"><span style="width: {{ fila.barra }}%"></span></span></div></td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                  <tfoot><tr><th scope="row">Total</th><td>{{ resultado.total_unidades }}</td><td class="money">${{ resultado.total_importe }}</td><td>{{ "100.00" if resultado.total_importe != "0.00" else "0.00" }}%</td></tr></tfoot>
+                </table>
+              </div>
+              {% else %}<p class="empty-note">El archivo no contiene ventas.</p>{% endif %}
+            </section>
+
+            <aside class="panel highlights" aria-labelledby="destacados-titulo">
+              <div class="panel-heading"><div><p class="eyebrow">LECTURA RÁPIDA</p><h3 id="destacados-titulo">Lo que destaca</h3></div></div>
+              <div class="highlight-item"><span>Más unidades</span><strong>{{ resultado.mas_vendido }}</strong></div>
+              <div class="highlight-item"><span>Mayor ingreso</span><strong>{{ resultado.mayor_ingreso }}</strong></div>
+              {% if resultado.ranking %}
+              <div class="ranking"><h4>Top por importe</h4><ol>{% for producto, importe in resultado.ranking %}<li><span>{{ producto }}</span><strong>${{ importe }}</strong></li>{% endfor %}</ol></div>
+              {% endif %}
+            </aside>
+          </div>
+        </section>
+        {% else %}
+        <section class="empty-state" aria-label="Cómo funciona">
+          <span class="empty-line" aria-hidden="true"></span>
+          <p><strong>Un archivo. Todas las respuestas.</strong> Subí tus ventas arriba o abrí el ejemplo para ver el resultado.</p>
+        </section>
+        {% endif %}
+      </main>
+
+      <footer><span>Informe/ventas</span><span>Hecho para entender tus números.</span></footer>
+    </div>
+  </body>
+</html>

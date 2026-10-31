@@ -54,47 +54,55 @@ def mostrar_resumen(resumen):
         )
 
 
-def exportar_resumen(resumen, ruta_salida):
+def escribir_resumen_csv(resumen, archivo):
     porcentajes = porcentaje_ingresos_por_producto(resumen)
     total_unidades = sum(datos["unidades"] for datos in resumen.values())
     total_importe = sum(datos["importe"] for datos in resumen.values())
-    with open(ruta_salida, "w", encoding="utf-8", newline="") as archivo:
-        escritor = csv.writer(archivo)
-        escritor.writerow(["producto", "unidades", "importe", "porcentaje"])
-        for producto in sorted(resumen):
-            datos = resumen[producto]
-            escritor.writerow(
-                [producto, datos["unidades"], f"{datos['importe']:.2f}", f"{porcentajes[producto]:.2f}"]
-            )
+    escritor = csv.writer(archivo)
+    escritor.writerow(["producto", "unidades", "importe", "porcentaje"])
+    for producto in sorted(resumen):
+        datos = resumen[producto]
         escritor.writerow(
-            ["TOTAL", total_unidades, f"{total_importe:.2f}", "100.00" if total_importe else "0.00"]
+            [producto, datos["unidades"], f"{datos['importe']:.2f}", f"{porcentajes[producto]:.2f}"]
         )
+    escritor.writerow(
+        ["TOTAL", total_unidades, f"{total_importe:.2f}", "100.00" if total_importe else "0.00"]
+    )
+
+
+def exportar_resumen(resumen, ruta_salida):
+    with open(ruta_salida, "w", encoding="utf-8", newline="") as archivo:
+        escribir_resumen_csv(resumen, archivo)
+
+
+def procesar_ventas_csv(archivo):
+    ventas = []
+    lector = csv.DictReader(archivo)
+    if lector.fieldnames is None:
+        raise ValueError("El archivo CSV está vacío.")
+    faltantes = {"producto", "cantidad", "precio"} - set(lector.fieldnames)
+    if faltantes:
+        raise ValueError(f"Faltan columnas en el CSV: {', '.join(sorted(faltantes))}.")
+    for numero_fila, fila in enumerate(lector, start=2):
+        if None in fila:
+            raise ValueError(f"Fila {numero_fila}: hay más valores que columnas.")
+        producto = (fila["producto"] or "").strip()
+        if not producto:
+            raise ValueError(f"Fila {numero_fila}: falta el producto.")
+        try:
+            cantidad = int((fila["cantidad"] or "").strip())
+            precio = float((fila["precio"] or "").strip())
+        except ValueError as error:
+            raise ValueError(f"Fila {numero_fila}: cantidad o precio inválido.") from error
+        if cantidad < 0 or precio < 0 or not math.isfinite(precio):
+            raise ValueError(f"Fila {numero_fila}: cantidad y precio deben ser números no negativos.")
+        ventas.append({"producto": producto, "cantidad": cantidad, "precio": precio})
+    return ventas
 
 
 def leer_ventas(ruta):
-    ventas = []
     with open(ruta, "r", encoding="utf-8-sig", newline="") as archivo:
-        lector = csv.DictReader(archivo)
-        if lector.fieldnames is None:
-            raise ValueError("El archivo CSV está vacío.")
-        faltantes = {"producto", "cantidad", "precio"} - set(lector.fieldnames)
-        if faltantes:
-            raise ValueError(f"Faltan columnas en el CSV: {', '.join(sorted(faltantes))}.")
-        for numero_fila, fila in enumerate(lector, start=2):
-            if None in fila:
-                raise ValueError(f"Fila {numero_fila}: hay más valores que columnas.")
-            producto = (fila["producto"] or "").strip()
-            if not producto:
-                raise ValueError(f"Fila {numero_fila}: falta el producto.")
-            try:
-                cantidad = int((fila["cantidad"] or "").strip())
-                precio = float((fila["precio"] or "").strip())
-            except ValueError as error:
-                raise ValueError(f"Fila {numero_fila}: cantidad o precio inválido.") from error
-            if cantidad < 0 or precio < 0 or not math.isfinite(precio):
-                raise ValueError(f"Fila {numero_fila}: cantidad y precio deben ser números no negativos.")
-            ventas.append({"producto": producto, "cantidad": cantidad, "precio": precio})
-    return ventas
+        return procesar_ventas_csv(archivo)
 
 
 def mas_vendido(resumen):
