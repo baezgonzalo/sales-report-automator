@@ -8,8 +8,6 @@ El archivo CSV debe tener estas columnas:
 
 ```csv
 producto,cantidad,precio
-Cuaderno,2,1500
-Lapicera,3,500
 ```
 
 `cantidad` debe ser un número entero no negativo y `precio` un número no negativo. Cada fila representa una venta de un producto. El script indica la fila cuando encuentra un dato inválido.
